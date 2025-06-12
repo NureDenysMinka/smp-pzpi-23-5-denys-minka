@@ -1,0 +1,17 @@
+<?php
+$links = [
+  "Головна" => "/",
+  "Продукти" => "/products",
+  "Корзина" => "/cart",
+];
+?>
+
+<footer class="inline-flex items-center w-full h-16 bg-white mt-auto">
+  <div class="w-fit mx-auto flex justify-center items-center divide-x divide-black">
+    <?php
+    foreach ($links as $link => $url) {
+      echo "<a class='px-2' href='$url'>$link</a>";
+    }
+    ?>
+  </div>
+</footer>

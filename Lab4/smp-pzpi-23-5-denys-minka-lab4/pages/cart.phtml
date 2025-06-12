@@ -1,0 +1,93 @@
+<?php
+require_once "./services/CartService.php";
+
+$cartService = new CartService();
+
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    if (isset($_POST["id"])) {
+        $cartService->removeItem((int)$_POST["id"]);
+        exit;
+    }
+    if (isset($_POST["reset-cart"])) {
+        $cartService->clearCart();
+        exit;
+    }
+}
+
+$cartItems = $cartService->getCartItems();
+$total = $cartService->calculateTotal();
+?>
+<!doctype html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Корзина | Інтернет-магазин "Весна"</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body class="flex flex-col w-full h-dvh mt-auto">
+    <?php include "./templates/navbar.phtml"; ?>
+    <main class="flex flex-col h-full w-fit mx-auto items-center justify-center gap-4">
+        <?php if (empty($cartItems)) : ?>
+            <a href="/products" class="text-lg font-semibold text-indigo-500 underline decoration-2">
+                Перейти до покупок
+            </a>
+        <?php else : ?>
+            <h1 class="scroll-m-20 text-2xl font-semibold tracking-tight mx-auto">Корзина</h1>
+            <table class="w-full text-sm text-left rtl:text-right text-gray-500">
+                <thead class="text-xs text-gray-700 uppercase bg-gray-100">
+                    <tr>
+                        <th scope="col" class="px-6 py-3">Назва</th>
+                        <th scope="col" class="px-6 py-3">Ціна</th>
+                        <th scope="col" class="px-6 py-3">Кількість</th>
+                        <th scope="col" class="px-6 py-3">Сума</th>
+                        <th scope="col" class="px-6 py-3">Дії</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($cartItems as $item) : ?>
+                        <tr class="bg-white border-b border-gray-200">
+                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">
+                                <?= htmlspecialchars($item['name']) ?>
+                            </th>
+                            <td class="px-6 py-4"><?= number_format($item['price'], 2) ?></td>
+                            <td class="px-6 py-4"><?= (int)$item['quantity'] ?></td>
+                            <td class="px-6 py-4"><?= number_format($item['total'], 2) ?></td>
+                            <td class="px-6 py-4">
+                                <form action="" method="post" style="display:inline">
+                                    <input type="hidden" name="id" value="<?= (int)$item['id'] ?>">
+                                    <button
+                                        class="flex items-center justify-center size-9 rounded-lg text-white bg-red-500 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                                        type="submit"
+                                        aria-label="Видалити товар">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M3 6h18M9 6v12M15 6v12M6 6V4a2 2 0 012-2h8a2 2 0 012 2v2"/>
+                                        </svg>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                    <tr class="bg-white border-b border-gray-200 font-semibold">
+                        <td class="px-6 py-4" colspan="3">Всього:</td>
+                        <td class="px-6 py-4"><?= number_format($total, 2) ?></td>
+                        <td class="px-6 py-4"></td>
+                    </tr>
+                </tbody>
+            </table>
+            <form class="w-full text-right space-x-2 mt-4" action="" method="post">
+                <input type="hidden" name="reset-cart" value="1">
+                <button type="submit" class="bg-red-500 text-white h-9 px-3 min-w-[128px] rounded-lg text-sm hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                    Відмінити
+                </button>
+                <button type="submit" class="bg-indigo-500 text-white h-9 px-3 min-w-[128px] rounded-lg text-sm hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                    Купити
+                </button>
+            </form>
+        <?php endif; ?>
+    </main>
+    <?php include "./templates/footer.phtml"; ?>
+</body>
+</html>

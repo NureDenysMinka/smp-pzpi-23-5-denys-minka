@@ -1,0 +1,324 @@
+МІНІСТЕРСТВО ОСВІТИ І НАУКИ УКРАЇНИ
+ХАРКІВСЬКИЙ НАЦІОНАЛЬНИЙ УНІВЕРСИТЕТ РАДІОЕЛЕКТРОНІКИ
+
+Кафедра Програмної інженерії
+
+Звіт
+з лабораторної роботи №4
+з дисципліни: «Скриптові мови програмування»
+з теми: «Структурування коду, робота з формами, автентифікація та авторизація»
+
+Виконав:
+
+Перевірив:
+
+ст. гр. ПЗПІ-23-5
+
+cт. виклач кафедри ПІ
+
+Мінка Д. М.
+
+Сокорчук І. П.
+
+Харків 2025
+
+2
+1 ІСТОРІЯ ЗМІН
+№ Дата
+1 23.05.2025
+
+Версія звіту
+0.1
+
+Опис змін та виправлень
+Початкова версія
+
+3
+2 ЗАВДАННЯ
+Використовуючи матеріал попередніх лабораторних робіт, потрібно додати
+такий функціонал:
+–
+
+Прибрати дублювання шапки і підвалу сайту (якщо воно є)
+
+–
+
+Додати сторінку логіна. Обмежити доступ до сайту не залогіненим
+користувачам.
+
+–
+
+Додати сторінку профілю з можливістю завантажити фото
+
+4
+3 ОПИС ВИКОНАНОЇ РОБОТИ
+Розроблений веб застосунок є доповненням до реалізованого в рамках 3-ї
+лабораторної роботи Інтернет-магазину.
+Розпочнемо з огляду реалізації авторизації. Для реалізації авторизації було
+створено спеціальний сервіс «AuthService», що має методи «login», для входу в
+акаунт та «logout» для виходу.
+«login» приймає два аргументи: імʼя користувача та пароль. Метод записує
+в сесію імʼя користувача та час коли він був авторизований, потім записує
+його облікові дані у глобальну змінну «credentials» оголошену у файлі «stores/
+credentials.php», наприкінці виконується перенаправлення на головну сторінку:
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+
+public static function login(string $username, string $password):
+void
+{
+$_SESSION['username'] = $username;
+$_SESSION['authorized_at'] = time();
+global $credentials;
+$credentials = [
+'username' => $username,
+'password' => $password,
+];
+header("Location: " . "/");
+}
+
+Метод «logout» видаляє усі дані записані у сесії користувача та у файлах
+«credentials.php» та «profile.php», а потім перенаправляє на головну сторінку.
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+
+public static function logout(): void
+{
+global $credentials;
+global $profile;
+unset($_SESSION['username']);
+unset($_SESSION['authorized_at']);
+unset($credentials);
+unset($profile);
+header("Location: " . "/");
+}
+
+5
+У логіку маршрутизації, описану в горловному файлі були внесені зміни,
+аби не давати можливості не авторизованим користувачам переходити на
+сторінки товарів, профілю та корзини, і авторизованим переходити на сторіку
+логіну. У випадку неавторизованих користувачів їм буде відображатися, що
+відповідна сторінка не знайдена або не існує, авторизованих же користувачів буде
+перенаправляти на головну, якщо вони захочуть перейти на сторінку логіну:
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+
+switch ($path) {
+case '/':
+include 'pages/home.phtml';
+break;
+case '/products':
+redirectToNotFound('pages/products.phtml');
+break;
+case '/cart':
+redirectToNotFound('pages/cart.phtml');
+break;
+case '/login':
+if (!isset($_SESSION['username'])) {
+include 'pages/login.phtml';;
+} else {
+header("Location: " . "/");
+}
+break;
+case '/profile':
+redirectToNotFound('pages/profile.phtml');
+break;
+default:
+http_response_code(404);
+include 'pages/404.phtml';
+break;
+}
+
+Реалізація функції «redirectToNotFound»:
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+
+<?php
+function redirectToNotFound(string $path): void
+{
+if (isset($_SESSION['username'])) {
+include $path;
+} else {
+include 'pages/404.phtml';
+}
+}
+
+6
+Для реалізації завантаження файлів було створено сервіс «UploadService», що
+має статичний метод «uploadImage», який відповідає за валідацію та завантаження
+зображень:
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+
+public static function uploadImage(): void {
+$imageSize = getimagesize($_FILES["avatar"]["tmp_name"]);
+if (!$imageSize) {
+throw new Exception("Файл не є зображенням");
+}
+if ($_FILES["avatar"]["size"] > 2 * 1024 * 1024) {
+throw new Exception("Файл занадто великий");
+}
+$targetFile = self::$TARGET_DIR . basename($_FILES["avatar"]
+["name"]);
+$imageFileType = strtolower(pathinfo($targetFile,
+PATHINFO_EXTENSION));
+if (!in_array($imageFileType, self::$ALLOWED_EXTENSIONS)) {
+throw new Exception("Дозволені лише розширення " . implode(',
+', self::$ALLOWED_EXTENSIONS));
+}
+move_uploaded_file($_FILES["avatar"]["tmp_name"], $targetFile);
+global $profile;
+$profile['avatar'] = $targetFile;
+}
+
+Для обробки логіки оновлення інформації профілю було створено сервіс
+«UsersService», що має статмичний метод «updateProfile», що приймає дані
+користувача та відповідальний за їх валідацію та запис:
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+
+<?php
+include 'stores/profile.php';
+class UsersService
+{
+public static function updateProfile(array $data): void {
+$age = self::calculateAge($data['date_of_birth']);
+if (strlen(trim($data['first_name'])) == 0) {
+throw new Exception('Поле з імʼям не заповнено');
+}
+if (strlen(trim($data['last_name'])) == 0) {
+
+7
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+
+throw new Exception('Поле з прізвищем не заповнено');
+}
+if (strlen(trim($data['description'])) == 0) {
+throw new Exception('Поле з прізвищем не заповнено');
+}
+if ($age < 16) {
+throw new Exception('Користувач занадто юний');
+}
+global $profile;
+$profile = $data;
+}
+private static function calculateAge(string $date): int {
+$birthDate = new DateTime($date);
+$today = new DateTime();
+return $today->diff($birthDate)->y;
+}
+}
+
+8
+4 ВИСНОВКИ
+Під час виконання лабораторної роботи, я навчився структурувати свій код,
+працювати з формами в PHP та реалізовувати базову авторизацію

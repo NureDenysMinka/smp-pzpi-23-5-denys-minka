@@ -1,0 +1,31 @@
+<?php
+$current_url = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+
+$links = [
+  "Головна" => "/",
+  "Продукти" => "/products",
+];
+?>
+
+<header class="inline-flex w-full h-16 items-center justify-between bg-white px-5">
+  <div class="flex items-center gap-5">
+    <?php
+    foreach ($links as $name => $link) {
+      $className = $current_url == $link ? "text-indigo-500" : "";
+      echo "<a class='$className' href='$link'>$name</a>";
+    }
+    ?>
+  </div>
+  <div class="flex items-center gap-3">
+    <?php if (isset($_SESSION['username'])) : ?>
+    <a class="flex items-center justify-center size-10 border border-slate-300 rounded-lg" href="/cart">
+      <svg xmlns="http://www.w3.org/2000/svg" class="size-5 text-slate-500" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></g></svg>
+    </a>
+    <a class="flex items-center justify-center size-10 border border-slate-300 rounded-lg" href="/profile">
+      <svg xmlns="http://www.w3.org/2000/svg" class="size-5 text-slate-500" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></g></svg>
+    </a>
+    <?php else : ?>
+      <a href="/login" class="flex items-center justify-center bg-indigo-500 text-white h-9 px-3 min-w-[128px] rounded-lg text-sm hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">Увійти в акаунт</a>
+    <?php endif; ?>
+  </div>
+</header>

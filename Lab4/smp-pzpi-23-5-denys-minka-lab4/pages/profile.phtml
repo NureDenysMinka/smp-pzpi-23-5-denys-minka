@@ -1,0 +1,131 @@
+<?php
+require_once 'services/UsersService.php';
+require_once 'services/UploadService.php';
+require_once 'services/AuthService.php';
+include 'stores/profile.php';
+
+if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['first_name'])) {
+	try {
+		UsersService::updateProfile($_POST);
+	} catch (Exception $e) {
+		$error = $e->getMessage();
+	}
+}
+
+if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_FILES['avatar'])) {
+	try {
+		UploadService::uploadImage();
+	} catch (Exception $e) {
+		$error = $e->getMessage();
+	}
+}
+
+if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['logout_action'])) {
+	AuthService::logout();
+}
+?>
+<!doctype html>
+<html lang="uk">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0" />
+	<meta http-equiv="X-UA-Compatible" content="ie=edge" />
+	<title>Профіль | Інтернет-магазин "Весна"</title>
+	<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body class="flex flex-col w-full h-dvh mt-auto">
+<?php include './templates/navbar.phtml'; ?>
+<main class="flex flex-col size-full items-center justify-center bg-slate-50 gap-4">
+	<div class="max-w-5xl mx-auto bg-white p-8 rounded-lg shadow-md">
+		<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+
+			<div class="flex flex-col items-center space-y-4">
+        <img src="<?= htmlspecialchars($_SESSION['avatar_path'] ?? $profile['avatar']) ?>" alt="avatar" class="w-48 h-48 rounded-2xl" />
+        <form id="upload_form" method="post" enctype="multipart/form-data">
+          <input id="upload" type="file" name="avatar" accept="image/*" required hidden />
+          <label for="upload" class="flex bg-white items-center leading-none text-black h-9 px-3 min-w-[128px] rounded-lg text-sm border border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 cursor-pointer">
+            Завантажити
+          </label>
+        </form>
+			</div>
+
+			<form class="md:col-span-2 space-y-6" method="post" novalidate>
+				<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+					<div>
+						<label for="first_name" class="block text-sm font-semibold mb-1">Імʼя</label>
+						<input
+							id="first_name"
+							name="first_name"
+							type="text"
+							placeholder="Введіть імʼя"
+							class="bg-gray-50 border border-gray-300 text-black text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5"
+							value="<?= htmlspecialchars($_SESSION['user']['first_name'] ?? $profile['first_name']) ?>"
+							autofocus
+							required
+						/>
+					</div>
+					<div>
+						<label for="last_name" class="block text-sm font-semibold mb-1">Прізвище</label>
+						<input
+							id="last_name"
+							name="last_name"
+							type="text"
+							placeholder="Введіть прізвище"
+							class="bg-gray-50 border border-gray-300 text-black text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5"
+							value="<?= htmlspecialchars($_SESSION['user']['last_name'] ?? $profile['last_name']) ?>"
+							required
+						/>
+					</div>
+					<div>
+						<label for="date_of_birth" class="block text-sm font-semibold mb-1">Дата народження</label>
+						<input
+							id="date_of_birth"
+							name="date_of_birth"
+							type="date"
+							class="bg-gray-50 border border-gray-300 text-black text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5"
+							value="<?= htmlspecialchars($_SESSION['user']['date_of_birth'] ?? $profile['date_of_birth']) ?>"
+							required
+						/>
+					</div>
+				</div>
+
+				<div>
+					<label for="bio" class="block text-sm font-semibold mb-1">Опис</label>
+					<textarea
+						id="bio"
+						name="bio"
+						class="bg-gray-50 border border-gray-300 text-black text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2.5"
+						placeholder="Напишіть щось про себе..."
+					><?= htmlspecialchars($_SESSION['user']['bio'] ?? $profile['bio']) ?></textarea>
+				</div>
+
+				<?php if (!empty($error)) : ?>
+					<p class="text-red-500"><?= htmlspecialchars($error) ?></p>
+				<?php endif; ?>
+
+				<div class="flex justify-end gap-3">
+          <!-- Виносимо форму логаута окремо -->
+					<button type="submit" class="bg-indigo-500 text-white h-9 px-3 min-w-[128px] rounded-lg text-sm hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+						Зберегти
+					</button>
+				</div>
+			</form>
+		</div>
+    <!-- Окрема форма для логаута -->
+    <form method="post" class="mt-4 text-right" action="<?= htmlspecialchars($_SERVER['PHP_SELF']) ?>">
+      <button name="logout_action" class="bg-red-600 text-white h-9 px-3 min-w-[128px] rounded-lg text-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+        Вийти
+      </button>
+    </form>
+	</div>
+</main>
+<?php include './templates/footer.phtml'; ?>
+<script>
+  document.getElementById('upload').addEventListener('change', function () {
+    if (this.files.length > 0) {
+      document.getElementById('upload_form').submit();
+    }
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,124 @@
+#!/bin/bash
+
+VERSION="1.0.0"
+
+print_help() {
+    cat <<EOF
+Usage: $(basename "$0") [--help | --version] | [[-q|--quiet] [academic_group] file_from_cist.csv]
+
+Options:
+  --help         Display this help message
+  --version      Show version information
+  -q, --quiet    Suppress standard output
+
+Parameters:
+  academic_group   (Optional) Name of the academic group
+  file_from_cist   (Optional) Input CSV file from CIST
+
+If academic group or file is not provided, you will be prompted to select them.
+EOF
+}
+
+print_version() {
+    echo "v$VERSION"
+}
+
+# Initialize default values
+quiet=false
+csv_path=""
+group_input=""
+
+# Parse command-line arguments
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --help) print_help; exit 0 ;;
+        --version) print_version; exit 0 ;;
+        -q|--quiet) quiet=true; shift ;;
+        *)
+            if [[ -z "$group_input" ]]; then
+                group_input="$1"
+            elif [[ -z "$csv_path" ]]; then
+                csv_path="$1"
+            else
+                echo "⛔ Too many arguments."
+                print_help
+                exit 1
+            fi
+            shift
+            ;;
+    esac
+done
+
+# Prompt for file if not provided
+if [[ -z "$csv_path" ]]; then
+    PS3="🔍 Choose a file: "
+    select csv_path in TimeTable_*.csv; do
+        [[ -n "$csv_path" ]] && break
+        echo "🚫 Invalid choice. Please try again."
+    done
+fi
+
+# Extract unique academic groups
+available_groups=$(iconv -f windows-1251 -t utf-8 "$csv_path" | \
+    sed -e 's/\r//g' | sed 's/^\xEF\xBB\xBF//' | \
+    sed 's/"//g' | awk -F',' 'NR > 1 { split($1, x, " - "); print x[1] }' | sort -u)
+
+[[ -z "$available_groups" ]] && { echo "❌ No academic groups found in the file."; exit 1; }
+
+# Prompt for group if not provided
+if [[ -z "$group_input" ]]; then
+    PS3="👤 Select a group: "
+    select selected_group in $available_groups; do
+        [[ -n "$selected_group" ]] && break
+        echo "🚫 Invalid selection. Please try again."
+    done
+else
+    selected_group="$group_input"
+fi
+
+# Prepare output file
+result_file="Google_${csv_path}"
+echo "\"Subject\",\"Start Date\",\"Start Time\",\"End Date\",\"End Time\",\"Description\"" > "$result_file"
+
+# Process CSV and format for Google Calendar
+iconv -f windows-1251 -t utf-8 "$csv_path" | \
+    sed -e 's/\r//g' -e 's/^\xEF\xBB\xBF//' | \
+    awk -v grp="$selected_group" '
+    BEGIN { FS="\",\""; OFS="|" }
+
+    function generate_key(date, time) {
+        split(date, d, "."); split(time, t, ":")
+        return sprintf("%04d%02d%02d%02d%02d", d[3], d[2], d[1], t[1], t[2])
+    }
+
+    NR > 1 {
+        gsub(/^"/, "", $1); gsub(/"$/, "", $(NF))
+        split($1, info, " - ")
+        if (info[1] == grp) {
+            print generate_key($2, $3), info[2], $2, $3, $4, $5, $12
+        }
+    }' | sort -t'|' -k1,1 | \
+    awk -F'|' '
+    BEGIN { OFS="," }
+
+    function fmt_time(t) {
+        split(t, a, ":"); h=a[1]; m=a[2]
+        period = (h >= 12) ? "PM" : "AM"
+        if (h == 0) h = 12; else if (h > 12) h -= 12
+        return sprintf("%02d:%02d %s", h, m, period)
+    }
+
+    function fmt_date(d) {
+        split(d, p, ".")
+        return sprintf("%02d/%02d/%04d", p[2], p[1], p[3])
+    }
+
+    {
+        key = $2 "-" $3
+        if (!(key in seen)) {
+            seen[key] = ++counter[$2]
+        }
+        print "\"" $2 "; №" seen[key] "\"", "\"" fmt_date($3) "\"", "\"" fmt_time($4) "\"", "\"" fmt_date($5) "\"", "\"" fmt_time($6) "\"", "\"" $7 "\""
+    }' >> "$result_file"
+
+$quiet || echo "✅ Saved to: $result_file"

@@ -1,0 +1,89 @@
+<?php
+require_once "./services/CartService.php";
+
+$cartService = new CartService();
+
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    if (isset($_POST["id"])) {
+        $cartService->removeItem((int)$_POST["id"]);
+    } elseif (isset($_POST["reset-cart"])) {
+        $cartService->clearCart();
+    }
+}
+
+$cartItems = $cartService->getCartItems();
+$total = $cartService->calculateTotal();
+?>
+<!doctype html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Корзина | Інтернет-магазин "Весна"</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body class="flex flex-col w-full h-dvh mt-auto">
+    <?php include "./templates/navbar.phtml"; ?>
+
+    <main class="flex flex-col h-full w-fit mx-auto items-center justify-center gap-4 p-4">
+        <?php if (empty($cartItems)): ?>
+            <a href="/products" class="text-lg font-semibold text-indigo-500 underline decoration-2">
+                Перейти до покупок
+            </a>
+        <?php else: ?>
+            <h1 class="text-2xl font-semibold">Корзина</h1>
+            <table class="w-full text-sm text-left text-gray-500">
+                <thead class="text-xs text-gray-700 uppercase bg-gray-100">
+                    <tr>
+                        <th class="px-6 py-3">Назва</th>
+                        <th class="px-6 py-3">Ціна</th>
+                        <th class="px-6 py-3">Кількість</th>
+                        <th class="px-6 py-3">Сума</th>
+                        <th class="px-6 py-3">Дії</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($cartItems as $item): ?>
+                        <tr class="bg-white border-b">
+                            <td class="px-6 py-4 font-medium text-gray-900"><?= htmlspecialchars($item['name']) ?></td>
+                            <td class="px-6 py-4"><?= $item['price'] ?></td>
+                            <td class="px-6 py-4"><?= $item['quantity'] ?></td>
+                            <td class="px-6 py-4"><?= $item['total'] ?></td>
+                            <td class="px-6 py-4">
+                                <form method="post" class="inline">
+                                    <input type="hidden" name="id" value="<?= (int)$item['id'] ?>">
+                                    <button class="flex items-center justify-center size-9 rounded-lg bg-red-500 hover:bg-red-600 text-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 24 24">
+                                            <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                  d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2m-6 5v6m4-6v6"/>
+                                        </svg>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                    <tr class="bg-white font-semibold">
+                        <td class="px-6 py-4">Всього:</td>
+                        <td></td>
+                        <td></td>
+                        <td class="px-6 py-4"><?= $total ?></td>
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <form method="post" class="w-full text-right mt-4 space-x-2">
+                <input type="hidden" name="reset-cart" value="1">
+                <button class="bg-red-500 text-white h-9 px-4 rounded-lg text-sm hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500">
+                    Відмінити
+                </button>
+                <button type="submit" class="bg-indigo-500 text-white h-9 px-4 rounded-lg text-sm hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    Купити
+                </button>
+            </form>
+        <?php endif; ?>
+    </main>
+
+    <?php include "./templates/footer.phtml"; ?>
+</body>
+</html>

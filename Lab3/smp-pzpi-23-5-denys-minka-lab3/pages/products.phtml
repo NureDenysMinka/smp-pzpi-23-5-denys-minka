@@ -1,0 +1,67 @@
+<?php
+require_once './services/ProductsService.php';
+require_once './services/CartService.php';
+
+$productsService = new ProductsService();
+$cartService = new CartService();
+
+$products = $productsService->getProducts();
+
+if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['quantities'])) {
+  $cartService->addItem($_POST['quantities']);
+}
+?>
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Товари | Магазин "Весна"</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body class="flex flex-col w-full h-dvh mt-auto">
+	<?php include './templates/navbar.phtml'; ?>
+
+	<main class="flex flex-col w-full h-full bg-slate-50 items-center justify-center gap-6">
+	  <h1 class="text-2xl font-semibold tracking-tight">Наші товари</h1>
+
+	  <form class="flex flex-col items-center gap-4" action="" method="post">
+	    <table class="w-full text-sm text-left text-gray-500">
+	      <thead class="text-xs text-gray-700 uppercase bg-gray-100">
+	        <tr>
+	          <th class="px-6 py-3">Назва товару</th>
+	          <th class="px-6 py-3">Кількість</th>
+	          <th class="px-6 py-3">Ціна</th>
+	        </tr>
+	      </thead>
+	      <tbody>
+	      <?php foreach ($products as $product) : ?>
+	        <tr class="bg-white border-b border-gray-200">
+	          <td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap"><?= $product['name'] ?></td>
+	          <td class="px-6 py-4">
+	            <input
+	              name="quantities[<?= $product['id'] ?>]"
+	              class="border border-slate-300 w-16 pl-2 focus:border-indigo-500 rounded-md"
+	              type="number"
+	              min="0"
+	              max="100"
+	              step="1"
+	              value="0"
+	            />
+	          </td>
+	          <td class="px-6 py-4">$<?= $product['price'] ?></td>
+	        </tr>
+	      <?php endforeach; ?>
+	      </tbody>
+	    </table>
+
+	    <button class="ml-auto bg-indigo-500 text-white h-9 px-3 min-w-[128px] rounded-lg text-sm hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+	      Додати до кошика
+	    </button>
+	  </form>
+	</main>
+
+	<?php include './templates/footer.phtml'; ?>
+</body>
+</html>

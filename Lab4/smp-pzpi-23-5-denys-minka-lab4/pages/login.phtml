@@ -1,0 +1,60 @@
+<?php
+require_once './services/AuthService.php';
+
+$error = '';
+
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+	try {
+		AuthService::login($_POST['username'], $_POST['password']);
+	} catch (Exception $e) {
+		$error = $e->getMessage();
+	}
+}
+?>
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport"  content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<title>Логін | Інтернет-магазин "Весна"</title>
+	<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body>
+	<main class="flex w-full h-dvh justify-center items-center">
+		<section class="flex flex-col w-fit h-auto gap-4 border border-slate-300 rounded-lg p-10">
+			<h1 class="scroll-m-20 text-2xl font-semibold tracking-tight text-center">Логін</h1>
+			<form class="flex flex-col w-[300px] gap-4" method="post">
+				<label for="username">
+					Імʼя користувача
+					<input
+						id="username"
+						name="username"
+						type="text"
+						placeholder="Введіть імʼя користувача"
+						class="bg-gray-50 border border-gray-300 text-black text-sm rounded-lg focus:ring-blue-500 focus:border-indigo-500 focus:ring focus:ring-indigo-500 block w-full p-2.5"
+						autofocus
+						required
+					/>
+				</label>
+				<label for="password">
+					Пароль
+					<input
+						id="password"
+						name="password"
+						type="password"
+						placeholder="Введіть пароль"
+						class="bg-gray-50 border border-gray-300 text-black text-sm rounded-lg focus:ring-blue-500 focus:border-indigo-500 focus:ring focus:ring-indigo-500 block w-full p-2.5"
+						required
+					/>
+				</label>
+				<?php if(!empty($error)) : ?>
+					<p class="text-red-500"><?php echo $error ?></p>
+				<?php endif; ?>
+				<button class="w-full bg-indigo-500 text-white h-9 px-3 min-w-[128px] rounded-lg text-sm hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">Увійти</button>
+				<a href="/" class="text-sm text-center text-indigo-500 underline decoration-2">Перейти на головну</a>
+			</form>
+		</section>
+	</main>
+</body>
+</html>
